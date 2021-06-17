@@ -1,5 +1,5 @@
 # Snake-AI
-##### An AI that plays snake. 
+##### No AI yet (but soon!)  
 
 ### Controls
 ##### ↑ ↓ ← →   Movement 
@@ -8,5 +8,5 @@
 ##### F - Speed up game speed
 ##### P - Pause game
 ### How it works
-##### The AI calculates the manhattan distance to the apple as a heuristic to make its next move.
+##### The program currently calculates the manhattan distance to the apple as a heuristic to make its next move.
 ##### Still a work in progress, and trying to implement DFS soon.
