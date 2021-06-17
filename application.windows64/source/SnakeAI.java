@@ -30,6 +30,7 @@ Square direction = new Square(0, 1);
 boolean paused = false;
 boolean ai = true;
 boolean keyPressedYet = false;
+ArrayList<Square> emptySpace = new ArrayList<Square>();
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class Square{
   double f;
@@ -82,6 +83,8 @@ public static Square getSquare(Square[][] grid, int i, int j){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //TODO 
 //checks if the snake has a way out, if it arrives at this square
+//basecase, square is null or is snake, then backtrack from here
+//use true && recur from each neighbor that is not visited
 //DFS until we reach a dead end
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, int dx, int dy){
@@ -92,6 +95,10 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
    Square left = getSquare(grid, i, j-1);
    Square up = getSquare(grid, i-1, j);
    Square down = getSquare(grid, i+1, j); 
+   //chooses which neighbors to prioritize
+   // takes it to consideration
+   // * Which way the snake is moving
+   // * Which direction the food is in
   if(direction.x > 0){
     //prior up, down, or right
     if(dy < 0){
@@ -103,7 +110,7 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
         //prior up
         n = new Square[]{up, right, down};
       }
-    }else{
+    }else if(dy > 0){
       //prior down or right
       if(abs(dx) > abs(dy)){
         //right
@@ -111,6 +118,15 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
       }else{
         //down
         n = new Square[]{down, right, up};
+      }
+    }else{
+      //either in front or behind snake's head
+      if(dx > 0){
+        //in front
+        n = new Square[]{right, up, down};
+      }else{
+        // behind
+        n = new Square[]{up, down, right};
       }
     }
   }else if(direction.x < 0){
@@ -124,7 +140,7 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
         //up
         n = new Square[]{up, left, down};
       }
-    }else{
+    }else if(dy > 0){
       //prior down or left
       if(abs(dx) > abs(dy)){
         //left
@@ -132,6 +148,14 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
       }else{
         //down
         n = new Square[]{down, left, up};
+      }
+    }else{
+      if(dx < 0){
+        //forward 
+        n = new Square[]{left, down, up};
+      }else{
+        //behind snake
+        n = new Square[]{down, up, left};
       }
     }
   }else if(direction.y > 0){
@@ -145,7 +169,7 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
         //left
         n = new Square[]{left, down, right};
       }
-    }else{
+    }else if(dx > 0){
       //prior right or down
       if(abs(dy) > abs(dx)){
         //down
@@ -153,6 +177,14 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
       }else{
         //right
         n = new Square[]{right, down, left};
+      }
+    }else{
+      if(dy > 0){
+        //below
+        n = new Square[]{down, right, left};
+      }else{
+        //above
+        n = new Square[]{right, left, down};
       }
     }
   }else{
@@ -166,7 +198,7 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
         //left
         n = new Square[]{left, up, right};
       }
-    }else{
+    }else if(dx > 0){
       //prior right or up
       if(abs(dy) > abs(dx)){
         //up
@@ -175,13 +207,24 @@ public static Square[] neighborsOf(Square s, Square direction, Square[][] grid, 
         //right
         n = new Square[]{right, up, left};
       }
+    }else{
+      if(dy > 0){
+        //below
+        n = new Square[]{left, right, up};
+      }else{
+        //above
+        n = new Square[]{up, right, left};
+      }
     }
   }
   return n;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public void settings(){
+  size(displayHeight - displayHeight%100, displayHeight - displayHeight%100);
+}
 public void setup(){
-  
+
   background(0);
   sqDimension = height/rowsxcols;
   spawnY = rowsxcols/2;
@@ -189,10 +232,11 @@ public void setup(){
   foodY = foodX;
   // Heuristic scores for each square initialized to their manhattan distance 
   // (euclidian distance makes the snake do zigzags and thats too chaotic) 
-  //initialize the grid
+  //initialize the grid and empty space
   for(int i = 0; i < grid.length; i++){
     for(int j = 0; j < grid[i].length; j++){
       grid[i][j] = new Square(i, j, abs(foodY-i) + abs(foodX-j)); //create a new Square (y, x, eucledian distance from the coordinate of the food)
+      emptySpace.add(grid[i][j]);
     }
   }
   //start of the snake
@@ -211,27 +255,30 @@ public void draw(){
         int newX = head.x + direction.x;
         
         grid[head.y][head.x].isFood = false;
-
+        emptySpace.add(grid[head.y][head.x]);
+        
         if(newY < rowsxcols && newY >= 0 && newX < rowsxcols && newX >= 0 && !snake.contains(grid[newY][newX])){
           grid[tail.y][tail.x].isSnake = false;
           grid[newY][newX].isSnake = true;
           snake.offer(grid[newY][newX]);
+          emptySpace.remove(grid[newX][newY]);
         }else{
           noLoop();
         }
         //squares on the game not occupied by the snake
         //need to update this is not efficient at all
-        ArrayList<Square> emptySpace = new ArrayList<Square>();
-        for(Square[] a: grid){
-          for(Square b: a){
-            if(!b.isSnake){
-              emptySpace.add(b);
-            }
-          }
-        }
+        //ArrayList<Square> emptySpace = new ArrayList<Square>();
+        //for(Square[] a: grid){
+        //  for(Square b: a){
+        //    if(!b.isSnake){
+        //      emptySpace.add(b);
+        //    }
+        //  }
+        //}
         // a new random place for the food to appear
         int randIndex = (int)random(emptySpace.size());
         Square randSquare = emptySpace.get(randIndex);
+        emptySpace.remove(randIndex);
         grid[randSquare.y][randSquare.x].isFood = true;
         foodX = randSquare.x;
         foodY = randSquare.y;
@@ -244,7 +291,9 @@ public void draw(){
         if(newY < rowsxcols && newY >= 0 && newX < rowsxcols && newX >= 0 && !snake.contains(grid[newY][newX])){
           snake.poll();
           grid[tail.y][tail.x].isSnake = false;
+          emptySpace.add(grid[tail.y][tail.x]);
           grid[newY][newX].isSnake = true;
+          emptySpace.remove(grid[newY][newX]);
           snake.offer(grid[newY][newX]);
           snake.getLast().g = 0; 
         }else{
@@ -360,11 +409,9 @@ public void keyPressed(){
     }
     keyPressedYet = true;
   }
-
 }
-  public void settings() {  size(1000, 1000); }
   static public void main(String[] passedArgs) {
-    String[] appletArgs = new String[] { "SnakeAI" };
+    String[] appletArgs = new String[] { "--present", "--window-color=#666666", "--stop-color=#FF0303", "SnakeAI" };
     if (passedArgs != null) {
       PApplet.main(concat(appletArgs, passedArgs));
     } else {
